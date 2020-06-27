@@ -1,45 +1,115 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 
-const App = () => {
-  const [ persons, setPersons ] = useState([
-    { name: 'Arto Hellas' }
-  ]) 
-  const [ newName, setNewName ] = useState('')
+const Filter = ({value, onChangeFunction}) => {
+  return (
+    <input value={value} onChange={onChangeFunction} />
+  )
+}
 
-  const addName = (event) => {
-    event.preventDefault();
-    const match = persons.find(person => person.name === newName);
-    if (match) {
-      alert (`${newName} is already added to the phonebook`)
-      return;
-    }
-    const newPerson = {
-      name: newName,
-    }
-    setPersons(persons.concat(newPerson))
-    setNewName("")
+function numberWithCommas(x) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// const PersonForm = ({name, number, nameOnChange, numberOnChange, onSubmission}) => {
+//   return (
+//     <div>
+//       <form onSubmit={onSubmission}>
+//         <div>
+//         Name: <input value={name} onChange={nameOnChange} />
+//         </div>
+//         <div>
+//         Number: <input value={number} onChange={numberOnChange} />
+//         </div>
+//         <button type="submit">Add</button>
+//       </form>
+//     </div>
+//   )
+// }
+
+const Countries = ({countries}) => {
+  console.log(countries)
+  if (countries.length > 5) {
+    return (
+      <div>Too many countries to list</div>
+    )
+  } else if (countries.length === 1) {
+    return (
+      <div>
+        <CountryInformation 
+        name={countries[0].name}
+        capital={countries[0].capital}
+        population={countries[0].population}
+        languages={countries[0].languages}
+        flag={countries[0].flag}
+        />
+    </div>
+    )
   }
-
-  const handleNameChange = (event) => {
-    setNewName(event.target.value)
-  }
-
   return (
     <div>
-      <h2>Phonebook</h2>
-      <form onSubmit={addName}>
-        <div>
-          Name: <input value={newName} onChange={handleNameChange}  />
-        </div>
-        <button type="submit">Add</button>
-      </form>
-      <h2>Numbers</h2>
-      <div>
-      {persons.map((person, i) => 
-          <p key={i}>{person.name} </p>
+        {countries.map((country, i) => 
+          <p key={i}>{country.name}</p>
         )}
-      </div>
     </div>
   )
 }
+
+const LanguagesList = ({languages}) => {
+  return (
+    <div>
+      <h3>Languages:</h3>
+      <ul>
+      {languages.map((language, i) => <li key={i}>{language.name}</li>)}
+      </ul>
+    </div>
+  )
+}
+
+const CountryInformation = ({name, capital, population, languages, flag}) => {
+  return (
+    <div>
+      <h1>{name}</h1>
+      <br></br>
+      <p>Capital: {capital}</p>
+      <p>Population: {numberWithCommas(population)}</p>
+      <LanguagesList languages={languages} />
+      <img src={flag} width="500" height="300"/>
+    </div>
+  )
+}
+
+const App = () => {
+  const [ countries, setCountries] = useState([])
+  const [ newSearch, setSearch] = useState('')
+  const [ countriesToShow, setVisibleCountries] = useState(countries)
+  
+  useEffect(() => {
+    axios
+    .get('https://restcountries.eu/rest/v2/all')
+    .then(response => {
+      setCountries(response.data)
+      setVisibleCountries(response.data)
+    })
+  },
+  [])
+
+  const handleSearch = (event) => {
+    setSearch(event.target.value)
+    const searchTerm = event.target.value
+    const filteredCountries = countries.filter(country => country.name.includes(searchTerm))
+    setVisibleCountries(filteredCountries)
+  }
+  return (
+    <div>
+      <h2>Countries data</h2>
+      <h3>Find countries</h3>
+      <Filter value={newSearch} onChangeFunction={handleSearch} />
+      <h2>Countries</h2>
+      <Countries 
+        countries={countriesToShow}
+      />
+    </div>
+  )
+} 
 export default App 
