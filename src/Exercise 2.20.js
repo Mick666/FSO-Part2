@@ -47,8 +47,9 @@ const App = () => {
   const [ newNumber, setNewNumber] = useState('')
   const [ newSearch, setSearch] = useState('')
   const [ peopleToShow, setVisibleNames] = useState(persons)
+  const [ errorMessage, setErrorMessage] = useState(null)
   const [notificationName, setNotificationName] = useState(null)
-  
+
   useEffect(() => {
     noteService
       .getAll()
@@ -77,6 +78,13 @@ const App = () => {
           setTimeout(() => {
             setNotificationName(null)
           }, 5000)
+        }).catch(error => {
+          setErrorMessage(
+            `Information of ${newPerson.name} has already been removed from the server`
+          )
+          setTimeout(() => {
+            setErrorMessage(null)
+          }, 5000)
         })
       return;
     } 
@@ -91,8 +99,6 @@ const App = () => {
           setNotificationName(null)
         }, 5000)
     })
-    setNewName("")
-    setNewNumber('')
   }
 
   const handleNameChange = (event) => {
@@ -110,20 +116,21 @@ const App = () => {
     setVisibleNames(filteredPersons)
   }
 
-  const Notification = ({ message }) => {
+  const Notification = ({ message, className }) => {
     if (message === null) {
       return null
     }
   
     return (
-      <div className={`notification`}>
+      <div className={className}>
         Added {message}
       </div>
     )
   }
 
   const deleteNumber = (event) => {
-    if (window.confirm(`Delete ${event.target.dataset.name}?`)) {
+    const name = event.target.dataset.name
+    if (window.confirm(`Delete ${name}?`)) {
       const id = Number(event.target.dataset.key)
       noteService
       .deleteEntry(id)
@@ -131,13 +138,21 @@ const App = () => {
         const updatedList = persons.filter(n => n.id !== id)
         setPersons(updatedList)
         setVisibleNames(updatedList)
+      }).catch(error => {
+        setErrorMessage(
+          `Information of ${name} has already been removed from the server`
+        )
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
       })
     }
   }
 
   return (
     <div>
-      <Notification message={notificationName} />
+      <Notification message={notificationName} className={"notification"}/>
+      <Notification message={errorMessage} className={"error"} />
       <h2>Phonebook</h2>
       <h3>Search the phonebook</h3>
       <Filter value={newSearch} onChangeFunction={handleSearch} />
