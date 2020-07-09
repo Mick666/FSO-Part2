@@ -47,8 +47,9 @@ const App = () => {
   const [ newNumber, setNewNumber] = useState('')
   const [ newSearch, setSearch] = useState('')
   const [ peopleToShow, setVisibleNames] = useState(persons)
+  const [ errorMessage, setErrorMessage] = useState(null)
   const [notificationName, setNotificationName] = useState(null)
-  
+
   useEffect(() => {
     noteService
       .getAll()
@@ -69,13 +70,20 @@ const App = () => {
     if (nameMatch && window.confirm(`${newName} is already added to the phone book. 
     Replace the old number with the new number?`)) {
       noteService
-        .update(nameMatch.id, newPerson)
+        .create(newPerson)
         .then(updatedPerson => {
           setPersons(persons.map(person => person.id !== nameMatch.id ? person : updatedPerson))
           setVisibleNames(persons.map(person => person.id !== nameMatch.id ? person : updatedPerson))
-          setNotificationName(newPerson.name)
+          setNotificationName(`Updated ${newPerson.name}`)
           setTimeout(() => {
             setNotificationName(null)
+          }, 5000)
+        }).catch(error => {
+          setErrorMessage(
+            `Information of ${newPerson.name} has already been removed from the server`
+          )
+          setTimeout(() => {
+            setErrorMessage(null)
           }, 5000)
         })
       return;
@@ -86,13 +94,11 @@ const App = () => {
     .then(addedPerson => {
         setPersons(persons.concat(addedPerson))
         setVisibleNames(persons.concat(addedPerson))
-        setNotificationName(newPerson.name)
+        setNotificationName(`Added ${newPerson.name}`)
         setTimeout(() => {
           setNotificationName(null)
         }, 5000)
     })
-    setNewName("")
-    setNewNumber('')
   }
 
   const handleNameChange = (event) => {
@@ -110,34 +116,43 @@ const App = () => {
     setVisibleNames(filteredPersons)
   }
 
-  const Notification = ({ message }) => {
+  const Notification = ({ message, className }) => {
     if (message === null) {
       return null
     }
   
     return (
-      <div className={`notification`}>
-        Added {message}
+      <div className={className}>
+        {message}
       </div>
     )
   }
 
   const deleteNumber = (event) => {
-    if (window.confirm(`Delete ${event.target.dataset.name}?`)) {
-      const id = Number(event.target.dataset.key)
+    const name = event.target.dataset.name
+    if (window.confirm(`Delete ${name}?`)) {
+      const id = event.target.dataset.key;
       noteService
       .deleteEntry(id)
       .then(_ => {
         const updatedList = persons.filter(n => n.id !== id)
         setPersons(updatedList)
         setVisibleNames(updatedList)
+      }).catch(error => {
+        setErrorMessage(
+          `Information of ${name} has already been removed from the server`
+        )
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
       })
     }
   }
 
   return (
     <div>
-      <Notification message={notificationName} />
+      <Notification message={notificationName} className={"notification"}/>
+      <Notification message={errorMessage} className={"error"} />
       <h2>Phonebook</h2>
       <h3>Search the phonebook</h3>
       <Filter value={newSearch} onChangeFunction={handleSearch} />
